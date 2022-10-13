@@ -62,12 +62,13 @@ GDExample::GDExample()
     rng->set_seed(1024);
     
     size_t num = 100;
-    real_t max = 100;
+    real_t max = 2;
     molecules.reserve(num);
     for (size_t i = 0; i < num; i++) {
         molecules.push_back({
                 Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max)),
-                Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max))
+                Vector3::ZERO
+                //Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max))
             });
     }
 }
@@ -197,7 +198,7 @@ void GDExample::_process(float delta) {
 
 
     // Simulate a bit
-    sim::iterate(sigma, epsilon, delta/100000, molecules);
+    sim::iterate(sigma, epsilon, delta/10, molecules);
     
 
     updateNumber++;
