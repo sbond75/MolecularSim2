@@ -61,16 +61,37 @@ GDExample::GDExample()
 
     rng->set_seed(1024);
     
+    // Make molecules
     size_t num = 100;
     real_t max = 2;
     molecules.reserve(num);
     for (size_t i = 0; i < num; i++) {
         molecules.push_back({
+                sim::MoleculeType::Argon,
                 Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max)),
                 Vector3::ZERO
                 //Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max))
             });
     }
+
+    // Make walls
+    num = 1000;
+    max = 10;
+    real_t epsilon = 1;
+    walls.reserve(num);
+    for (real_t i = -max; i < max; i++) {
+        for (real_t j = -max; j < max; j++) {
+            for (real_t k = -max; k < max; k++) {
+                if ((i < max - epsilon && j < max - epsilon && k < max - epsilon) && (i > -max && j > -max && k > -max)) continue;
+                walls.push_back({
+                        Vector3(i,j,k)
+                    });
+            }
+        }
+    }
+    
+    static_assert(sizeof(uint64_t) >= sizeof(size_t));
+    Godot::print("Walls: {0}", (uint64_t)walls.size()); // Based on `String("Hello, {0}!").format(Array::make(target))` in code example on https://gamedevadventures.posthaven.com/using-c-plus-plus-and-gdnative-in-godot-part-1
 }
 
 GDExample::~GDExample() {
@@ -138,11 +159,19 @@ void GDExample::_process(float delta) {
 
     // Loop over all atoms' positions in the coords list
     size_t numAtoms = molecules.size();
-    mm->set_instance_count(numAtoms);
+    mm->set_instance_count(numAtoms + walls.size());
     for (size_t i = 0; i < numAtoms; i++) {
-        sim::Argon& m = molecules[i];
+        sim::Molecule& m = molecules[i];
         Vector3 pos = m.pos;
         mm->set_instance_transform(i, Transform(Basis(), pos));
+    }
+
+    // Loop over walls
+    for (size_t i = 0; i < walls.size(); i++) {
+        sim::Wall& m = walls[i];
+        Vector3 pos = m.pos;
+        mm->set_instance_transform(numAtoms + i, Transform(Basis(), pos));
+        mm->set_instance_color(numAtoms + i, Color(0.7, 0.8, 1));
     }
 
     // Grab bonds //
@@ -198,7 +227,7 @@ void GDExample::_process(float delta) {
 
 
     // Simulate a bit
-    sim::iterate(sigma, epsilon, delta/10, molecules);
+    sim::iterate(sigma, epsilon, delta/10, molecules, walls);
     
 
     updateNumber++;

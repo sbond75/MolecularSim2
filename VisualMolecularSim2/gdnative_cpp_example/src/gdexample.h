@@ -31,7 +31,8 @@ private:
 
     Transform originalTransform;
 
-    std::vector<sim::Argon> molecules;
+    std::vector<sim::Molecule> molecules;
+    std::vector<sim::Wall> walls;
     RandomNumberGenerator* rng;
     real_t sigma;
     real_t epsilon;

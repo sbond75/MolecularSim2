@@ -2,7 +2,22 @@
 
 namespace sim {
 
-  real_t Argon::mass = 39.948; // Daltons ( https://en.wikipedia.org/wiki/Atomic_mass ). To convert to kg, multiply Daltons by 1.66053892173E-27 ( http://www.conversion-website.com/mass/dalton-to-kilogram.html )
+  real_t mass(MoleculeType type) {
+    switch (type) {
+    case Argon:
+      return 39.948; // Daltons ( https://en.wikipedia.org/wiki/Atomic_mass ). To convert to kg, multiply Daltons by 1.66053892173E-27 ( http://www.conversion-website.com/mass/dalton-to-kilogram.html )
+    default:
+      exit(1);
+    }
+  }
+
+  void Molecule::applyForce(Vector3 f, float deltaTime) {
+    velocity += f / mass(type) * deltaTime;
+  }
+
+  void Molecule::updatePos(float deltaTime) {
+    pos += velocity * deltaTime;
+  }
 
   // sigma: length scale
   // epsilon: governs the strength of the interaction
@@ -20,17 +35,25 @@ namespace sim {
     return 48 * epsilon / (sigma * sigma) * (pow(sigma / dist, 14) - 0.5 * pow(sigma / dist, 8)) * (p1 - p2);
   }
 
-  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Argon>& molecules) {
+  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<Wall>& walls) {
     for (size_t i = 0; i < molecules.size(); i++) {
-      Argon& m1 = molecules[i];
+      Molecule& m1 = molecules[i];
       for (size_t j = 0; j < molecules.size(); j++) {
 	if (i == j) continue;
-	Argon& m2 = molecules[j];
+	Molecule& m2 = molecules[j];
 	
 	Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos);
-	m1.velocity += force / Argon::mass * deltaTime;
-	m1.pos += m1.velocity * deltaTime;
+	m1.applyForce(force, deltaTime);
       }
+
+      for (size_t j = 0; j < walls.size(); j++) {
+	Wall& m2 = walls[j];
+
+	Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos);
+	m1.applyForce(force, deltaTime);
+      }
+
+      m1.updatePos(deltaTime);
     }
   }
 }
