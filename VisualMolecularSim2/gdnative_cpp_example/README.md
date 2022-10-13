@@ -1,0 +1,3 @@
+- To compile, run `scons platform=osx target=debug --compiledb=` on macOS.
+- To run: `nix-shell shell.nix --command "lldb  -o run /Applications/Godot_mono.app/Contents/MacOS/Godot -- --path ./VisualMolecularSim"` -- run this from within the root folder of this repo.
+  - Or, to run from within the `gdnative_cpp_example` folder of this repo, run `bash ./run.sh`.

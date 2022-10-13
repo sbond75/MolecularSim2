@@ -1,0 +1,3 @@
+[submodule "VisualMolecularSim2/gdnative_cpp_example/godot-cpp"]
+	path = VisualMolecularSim2/gdnative_cpp_example/godot-cpp
+	url = https://github.com/godotengine/godot-cpp
