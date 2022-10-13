@@ -5,7 +5,7 @@ namespace sim {
   real_t mass(MoleculeType type) {
     switch (type) {
     case Argon:
-      return 39.948; // Daltons ( https://en.wikipedia.org/wiki/Atomic_mass ). To convert to kg, multiply Daltons by 1.66053892173E-27 ( http://www.conversion-website.com/mass/dalton-to-kilogram.html )
+      return 3.9; //39.948; // Daltons ( https://en.wikipedia.org/wiki/Atomic_mass ). To convert to kg, multiply Daltons by 1.66053892173E-27 ( http://www.conversion-website.com/mass/dalton-to-kilogram.html )
     default:
       exit(1);
     }

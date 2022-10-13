@@ -63,14 +63,15 @@ GDExample::GDExample()
     
     // Make molecules
     size_t num = 100;
-    real_t max = 2;
+    real_t max = 7.5;
+    real_t velmax = 20;
     molecules.reserve(num);
     for (size_t i = 0; i < num; i++) {
         molecules.push_back({
                 sim::MoleculeType::Argon,
                 Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max)),
-                Vector3::ZERO
-                //Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max))
+                //Vector3::ZERO
+                Vector3(rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax))
             });
     }
 
