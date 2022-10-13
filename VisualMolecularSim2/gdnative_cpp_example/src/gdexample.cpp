@@ -167,11 +167,12 @@ void GDExample::_process(float delta) {
     }
 
     // Loop over walls
+    //Godot::print("Color format: {0}", mm->get_color_format());
     for (size_t i = 0; i < walls.size(); i++) {
         sim::Wall& m = walls[i];
         Vector3 pos = m.pos;
         mm->set_instance_transform(numAtoms + i, Transform(Basis(), pos));
-        mm->set_instance_color(numAtoms + i, Color(0.7, 0.8, 1));
+        mm->set_instance_color(numAtoms + i, Color(0.3, 0.4, 0.5));
     }
 
     // Grab bonds //

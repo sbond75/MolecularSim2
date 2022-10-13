@@ -1,5 +1,9 @@
 shader_type spatial;
 
+void fragment() {
+    ALBEDO = COLOR.xyz;
+}
+
 // uniform float time_scale;
 // uniform float side_to_side;
 
