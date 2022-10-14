@@ -6,7 +6,12 @@ using namespace godot;
 namespace sim {
 
   enum MoleculeType {
+    Nitrogen,
+    Oxygen,
     Argon,
+    CarbonDioxide,
+    
+    GenericLightweightMolecule
   };
 
   extern real_t mass(MoleculeType type);

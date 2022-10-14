@@ -18,6 +18,9 @@
 #include <pybind11/stl.h>
 
 #include "util.hpp"
+#include <numeric>
+#include <limits>
+#include "rng.hpp"
 
 using namespace godot;
 
@@ -53,17 +56,21 @@ void GDExample::_register_methods() {
 }
 
 GDExample::GDExample()
-    : rng(RandomNumberGenerator::_new()),
-      sigma(1),
-      epsilon(1)
+    : rng(RandomNumberGenerator::_new()), air_rng(RandomNumberGenerator::_new()),
+      sigma(125.7),
+      epsilon(0.3345)
 {
     initPython_do_once();
 
-    rng->set_seed(1024);
+    int64_t seed = 1024;
+    rng->set_seed(seed);
+    air_rng->set_seed(seed);
     
     // Make molecules
-    size_t num = 100;
-    real_t max = 7.5;
+    size_t numAir = 100;
+    size_t num = 100 + numAir;
+    real_t epsilon = 10; //1;
+    real_t max = 7.5 * epsilon; //7.5;
     real_t velmax = 20;
     molecules.reserve(num);
     for (size_t i = 0; i < num; i++) {
@@ -75,14 +82,35 @@ GDExample::GDExample()
             });
     }
 
+    // Make air
+    std::vector<real_t> airComposition = {0.7808, 0.2095, 0.0093, 0.0004}; // https://en.wikipedia.org/wiki/Atmosphere_of_Earth : "By mole fraction (i.e., by number of molecules), dry air contains 78.08% nitrogen, 20.95% oxygen, 0.93% argon, 0.04% carbon dioxide, and small amounts of other gases."
+    for (size_t i = 0; i < numAir; i++) {
+        sim::MoleculeType m;
+        switch (rng::randp(*air_rng, airComposition)) {
+        case 0:
+            m = sim::Nitrogen;
+            break;
+        case 1:
+            m = sim::Oxygen;
+            break;
+        case 2:
+            m = sim::Argon;
+            break;
+        case 3:
+            m = sim::CarbonDioxide;
+            break;
+        default:
+            exit(1);
+        }
+    }
+
     // Make walls
     num = 1000;
-    max = 10;
-    real_t epsilon = 1;
+    max = max * (1.0 + 1.0 / 3); //10;
     walls.reserve(num);
-    for (real_t i = -max; i < max; i++) {
-        for (real_t j = -max; j < max; j++) {
-            for (real_t k = -max; k < max; k++) {
+    for (real_t i = -max; i < max; i+=epsilon) {
+        for (real_t j = -max; j < max; j+=epsilon) {
+            for (real_t k = -max; k < max; k+=epsilon) {
                 if ((i < max - epsilon && j < max - epsilon && k < max - epsilon) && (i > -max && j > -max && k > -max)) continue;
                 walls.push_back({
                         Vector3(i,j,k)
@@ -98,6 +126,7 @@ GDExample::GDExample()
 GDExample::~GDExample() {
     // add your cleanup here
     rng->free();
+    air_rng->free();
 }
 
 void GDExample::initSim(double timeSkip_) {

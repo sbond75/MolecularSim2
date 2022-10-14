@@ -33,7 +33,7 @@ private:
 
     std::vector<sim::Molecule> molecules;
     std::vector<sim::Wall> walls;
-    RandomNumberGenerator* rng;
+    RandomNumberGenerator* rng, *air_rng;
     real_t sigma;
     real_t epsilon;
     
