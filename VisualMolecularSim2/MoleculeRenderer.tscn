@@ -50,6 +50,7 @@ transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 16 )
 far = 8192.0
 script = ExtResource( 4 )
 speed_up_action = "ui_speedup"
+extra_speed_up_action = "ui_extra_speedup"
 
 [node name="Control" type="Control" parent="."]
 margin_right = 40.0

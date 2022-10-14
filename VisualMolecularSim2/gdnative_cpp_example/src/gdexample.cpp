@@ -21,6 +21,8 @@
 #include <numeric>
 #include <limits>
 #include "rng.hpp"
+#include <InputEventKey.hpp>
+#include <GlobalConstants.hpp>
 
 using namespace godot;
 
@@ -53,21 +55,57 @@ void initPython_do_once()
 
 void GDExample::_register_methods() {
     register_method("_process", &GDExample::_process);
+    register_method("_input", &GDExample::_input);
 }
 
 GDExample::GDExample()
-    : rng(RandomNumberGenerator::_new()), air_rng(RandomNumberGenerator::_new()),
-      sigma(125.7),
-      epsilon(0.3345)
 {
     initPython_do_once();
+}
+
+GDExample::~GDExample() {
+    // add your cleanup here
+    deinit();
+}
+
+void GDExample::deinit() {
+    rng->free();
+    air_rng->free();
+}
+
+void GDExample::initSim(double timeSkip_) {
+    // initialize any variables here
+    currentRowIndex = 0;
+    timePassedTotal += timePassed;
+    timePassed = 0.0;
+    timeSkip = 0.0;
+    running = true;
+    updateNumber = 0;
+    
+    // Configurable //
+    timeScale = 0.1; //0.80; //1;//15; //90; //5; //0.5; //0.1;
+    posScale = 1; //0.00001; //0.001;
+    // //
+    
+    std::string s = "timeSkip: " + std::to_string(timeSkip);
+    Godot::print(s.c_str());
+    s = "currentRowIndex: " + std::to_string(currentRowIndex);
+    Godot::print(s.c_str());
+
+
+    // Set up sim
+    
+    rng = RandomNumberGenerator::_new();
+    air_rng = RandomNumberGenerator::_new();
+    sigma = 125.7;
+    epsilon = 0.3345;
 
     int64_t seed = 1024;
     rng->set_seed(seed);
     air_rng->set_seed(seed);
     
     // Make molecules
-    size_t numAir = 100;
+    size_t numAir = 1000;
     size_t num = 100 + numAir;
     real_t epsilon = 10; //1;
     real_t max = 7.5 * epsilon; //7.5;
@@ -123,35 +161,8 @@ GDExample::GDExample()
     Godot::print("Walls: {0}", (uint64_t)walls.size()); // Based on `String("Hello, {0}!").format(Array::make(target))` in code example on https://gamedevadventures.posthaven.com/using-c-plus-plus-and-gdnative-in-godot-part-1
 }
 
-GDExample::~GDExample() {
-    // add your cleanup here
-    rng->free();
-    air_rng->free();
-}
-
-void GDExample::initSim(double timeSkip_) {
-    // initialize any variables here
-    currentRowIndex = 0;
-    timePassedTotal += timePassed;
-    timePassed = 0.0;
-    timeSkip = 0.0;
-    running = true;
-    updateNumber = 0;
-    
-    // Configurable //
-    timeScale = 0.80; //1;//15; //90; //5; //0.5; //0.1;
-    posScale = 1; //0.00001; //0.001;
-    // //
-    
-    std::string s = "timeSkip: " + std::to_string(timeSkip);
-    Godot::print(s.c_str());
-    s = "currentRowIndex: " + std::to_string(currentRowIndex);
-    Godot::print(s.c_str());
-}
-
 void GDExample::_init() {
     originalTransform = get_transform();
-    timePassed = 0.0;
     initSim();
 }
 
@@ -258,8 +269,41 @@ void GDExample::_process(float delta) {
 
 
     // Simulate a bit
-    sim::iterate(sigma, epsilon, delta/10, molecules, walls);
+    sim::iterate(sigma, epsilon, delta * timeScale, molecules, walls);
     
 
     updateNumber++;
+}
+
+// https://godotengine.org/qa/54735/how-to-define-_input-method-in-gdnative-c
+void GDExample::_input(Variant event) {
+    if (Object::cast_to<InputEventKey>(event.operator Object*()) == nullptr) return; // Not `InputEventKey` type ( https://www.reddit.com/r/godot/comments/bwccdm/variant_type_checking_in_gdnative/ )
+    Ref<InputEventKey> joy_btn = event;
+    double mods = (joy_btn->get_shift() ? 10.0 : 1.0) * (joy_btn->get_alt() ? 100.0 : 1.0);
+    if (joy_btn->is_pressed() && joy_btn->get_scancode() == GlobalConstants::KEY_UP) {
+        // Speed up time
+        timeScale += 0.0001 * mods;
+        Godot::print("timeScale: {0}", timeScale);
+    }
+    if (joy_btn->is_pressed() && joy_btn->get_scancode() == GlobalConstants::KEY_DOWN) {
+        // Slow down time
+        timeScale -= 0.0001 * mods;
+        if (timeScale < 0)
+            timeScale = 0;
+        Godot::print("timeScale: {0}", timeScale);
+    }
+    if (joy_btn->is_pressed() && joy_btn->get_scancode() == GlobalConstants::KEY_R) {
+        // Restart sim
+        restart();
+    }
+}
+
+void GDExample::restart() {
+    molecules.clear();
+    walls.clear();
+    
+    double oldTimeScale = timeScale;
+    deinit();
+    initSim();
+    timeScale = oldTimeScale;
 }

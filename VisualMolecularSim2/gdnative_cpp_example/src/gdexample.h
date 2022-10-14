@@ -38,6 +38,10 @@ private:
     real_t epsilon;
     
     double currentTime() const;
+
+    void initSim(double timeSkip_=0.0);
+    
+    void deinit();
     
 public:
     static void _register_methods();
@@ -47,11 +51,12 @@ public:
 
     void _init(); // our initializer called by Godot
 
-    void initSim(double timeSkip_=0.0);
-
     void _process(float delta);
+    void _input(Variant event);
 
     void _draw();
+
+    void restart();
 };
 
 }

@@ -25,6 +25,7 @@ export (float, 0.0, 1.0) var acceleration = 1.0
 export (float, 0.0, 0.0, 1.0) var deceleration = 0.1
 export var max_speed = Vector3(1.0, 1.0, 1.0)
 export var max_speedup_speed = Vector3(5.0, 5.0, 5.0)
+export var max_extra_speedup_speed = Vector3(50.0, 50.0, 50.0)
 export var local = true
 export var forward_action = "ui_up"
 export var backward_action = "ui_down"
@@ -33,6 +34,7 @@ export var right_action = "ui_right"
 export var up_action = "ui_page_up"
 export var down_action = "ui_page_down"
 export(String) var speed_up_action = null
+export(String) var extra_speed_up_action = null
 
 # Gui settings
 export var use_gui = true
@@ -112,6 +114,7 @@ func _physics_process(delta):
 
 func _update_movement(delta):
 	var max_speed = self.max_speedup_speed if speed_up_action != null and Input.is_action_pressed(speed_up_action) else self.max_speed
+	max_speed = self.max_extra_speedup_speed if extra_speed_up_action != null and Input.is_action_pressed(extra_speed_up_action) else max_speed
 	var offset = max_speed * acceleration * _direction
 	
 	_speed.x = clamp(_speed.x + offset.x, -max_speed.x, max_speed.x)
