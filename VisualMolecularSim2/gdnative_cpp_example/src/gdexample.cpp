@@ -23,8 +23,8 @@
 #include "rng.hpp"
 #include <InputEventKey.hpp>
 #include <GlobalConstants.hpp>
-#include <chrono>
 //#include "lib/chrono_io"
+#include "timing.hpp"
 
 using namespace godot;
 
@@ -286,12 +286,11 @@ void GDExample::_process(float delta) {
 
 
     // Simulate a bit //
-    
-    // https://stackoverflow.com/questions/1487695/c-cross-platform-high-resolution-timer
-    typedef std::chrono::high_resolution_clock Clock;
-    auto t1 = Clock::now();
 
-    sim::iterate(sigma, epsilon, delta * timeScale, molecules, moleculeForces, walls, boundingBoxWalls);
+    auto t1 = timing::startTimer();
+
+    real_t uSum, virSum;
+    sim::iterate(sigma, epsilon, delta * timeScale, molecules, moleculeForces, walls, boundingBoxWalls, uSum, virSum);
 
     // Stability enforcement (since some molecules spawn on top of each other at random, giving them tons of kinetic energy it seems..)
     if (updateNumber <= 100) {
@@ -303,13 +302,25 @@ void GDExample::_process(float delta) {
     else if (updateNumber == 101) {
         Godot::print("Stability enforced");
     }
-    
-    auto t2 = Clock::now();
-    double ms = std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count() / 1'000'000.0;
+
+    double ms = timing::stopTimer(t1);
     averageSimTime += ms;
     if (updateNumber % 60 == 0) {
         Godot::print("{0} {1}", averageSimTime / 60, "milliseconds");
         averageSimTime = 0;
+
+        t1 = timing::startTimer();
+
+        real_t ke, te, p, t;
+        sim::evaluateProperties(molecules, boundingBoxWalls, uSum, virSum, ke, te, p, t);
+        Godot::print(R"(  Kinetic energy: {0}
+  Total energy: {1}
+  Pressure: {2}
+  Temperature: {3})", ke, te, p, t);
+
+        timing::stopTimer(t1, "evaluateProperties");
+        
+        Godot::print("");
     }
 
     // //

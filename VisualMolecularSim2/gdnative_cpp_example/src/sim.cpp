@@ -66,51 +66,83 @@ namespace sim {
   // epsilon: governs the strength of the interaction
   // p1: position of molecule 1 (vector (bold) "r_i")
   // p2: position of molecule 2 (vector "r_j")
-  Vector3 forceOnMolecule(real_t sigma, real_t epsilon, Vector3 p1, Vector3 p2) {
+  Vector3 forceOnMolecule(real_t sigma, real_t epsilon, Vector3 p1, Vector3 p2, real_t& out_forceMagnitude, float& out_distSquared, real_t& out_dist) {
     // r_c: maximum distance
     real_t r_c = pow(2, 1.0/6) * sigma;
 
 //#define pow fs_power
-//#define pow ipow
+#define pow ipow
     //[option:vcl]//
-    real_t dist = sqrt(vcl::horizontal_add(vcl::square(p1 - p2))); // "r" aka "r_ij"
+    out_distSquared = vcl::horizontal_add(vcl::square(p1 - p2));
+    out_dist = sqrt(out_distSquared); // "r" aka "r_ij"
     //
     //[non-option:vcl]//
     // real_t dist = p1.distance_to(p2); // "r" aka "r_ij"
     // //
-    if (dist >= r_c) {
+    if (out_dist >= r_c) {
       // Maximum distance reached
+      out_forceMagnitude = 0;
       return Vector3(0, 0, 0, 0); //Vector3::ZERO;
     }
-    return 48 * epsilon / (sigma * sigma) * (pow(sigma / dist, 14) - 0.5 * pow(sigma / dist, 8)) * (p1 - p2);
+    out_forceMagnitude = 48 * epsilon / (sigma * sigma) * (pow(sigma / out_dist, 14) - 0.5 * pow(sigma / out_dist, 8));
+    return out_forceMagnitude * (p1 - p2);
+  }
+#undef pow
+  
+  // sigma: length scale
+  // epsilon: governs the strength of the interaction
+  // p1: position of molecule 1 (vector (bold) "r_i")
+  // p2: position of molecule 2 (vector "r_j")
+  real_t potentialEnergyOnMolecule(real_t sigma, real_t epsilon, real_t dist) {
+    // r_c: maximum distance
+    real_t r_c = pow(2, 1.0/6) * sigma;
+
+//#define pow fs_power
+#define pow ipow
+    if (dist >= r_c) {
+      // Maximum distance reached
+      return 0;
+    }
+    return 4 * epsilon * (pow(sigma / dist, 12) - pow(sigma / dist, 6)) + epsilon;
   }
 #undef pow
 
-  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<ForceInfo>& moleculeForces, std::vector<Wall>& walls, ::Vector3 boundingBoxWalls[2]) {
-    for (size_t i = 0; i < molecules.size(); i++) {
-      Molecule& m1 = molecules[i];
-      ForceInfo& f1 = moleculeForces[i]; //[non-deprecated:badImpl]
-      for (size_t j = 0; j < molecules.size(); j++) {
-	if (i == j) continue;
-	Molecule& m2 = molecules[j];
-	ForceInfo& f2 = moleculeForces[j]; //[non-deprecated:badImpl]
-	
-	Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos);
-	//[deprecated:badImpl] m1.applyForce(force, deltaTime);
-        f1.applyForce(force);
+  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<ForceInfo>& moleculeForces, std::vector<Wall>& walls, ::Vector3 boundingBoxWalls[2], real_t& out_uSum, real_t& out_virSum) {
+    out_uSum = 0;
+    out_virSum = 0;
+    real_t fcVal;
+    float distSquared;
+    real_t dist;
+    if (molecules.size() > 0) {
+      for (size_t i = 0; i < molecules.size() - 1; i++) {
+        Molecule& m1 = molecules[i];
+        ForceInfo& f1 = moleculeForces[i]; //[non-deprecated:badImpl]
+        for (size_t j = i + 1; j < molecules.size(); j++) {
+          Molecule& m2 = molecules[j];
+          ForceInfo& f2 = moleculeForces[j]; //[non-deprecated:badImpl]
+
+          Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos, fcVal, distSquared, dist);
+          out_uSum += potentialEnergyOnMolecule(sigma, epsilon, dist);
+          out_virSum += fcVal * distSquared;
+          //[deprecated:badImpl] m1.applyForce(force, deltaTime);
+          f1.applyForce(force);
+          f2.applyForce(-force); // https://pythoninchemistry.org/sim_and_scat/molecular_dynamics/build_an_md
+        }
+
+        for (size_t j = 0; j < walls.size(); j++) {
+          Wall& m2 = walls[j];
+
+          Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos, fcVal, distSquared, dist);
+          // TODO: change out_uSum here?
+          // TODO: change out_virSum here?
+          //[deprecated:badImpl] m1.applyForce(force, deltaTime);
+          f1.applyForce(force);
+        }
+
+        //[deprecated:badImpl] m1.updatePos(deltaTime);
       }
-
-      for (size_t j = 0; j < walls.size(); j++) {
-	Wall& m2 = walls[j];
-
-	Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos);
-	//[deprecated:badImpl] m1.applyForce(force, deltaTime);
-        f1.applyForce(force);
-      }
-
-      //[deprecated:badImpl] m1.updatePos(deltaTime);
     }
-
+  
     //[non-deprecated:badImpl]//
     for (size_t i = 0; i < molecules.size(); i++) {
       Molecule& m1 = molecules[i];
@@ -130,5 +162,30 @@ namespace sim {
       }
     }
     // //
+  }
+
+  void evaluateProperties(std::vector<Molecule>& molecules, ::Vector3 boundingBoxWalls[2], real_t uSum, real_t virSum, real_t& out_kineticEnergy, real_t& out_totalEnergy, real_t& out_pressure, real_t& out_temperature) {
+    // Based on https://gist.github.com/lucazammataro/42c4423f2082306824f4dd3352dde807#file-rap_2_measurement_functions-py from the code block labelled "Code 10" on https://towardsdatascience.com/the-lennard-jones-potential-35b2bae9446c
+    Vector3 vSum{0};
+    real_t vvSum = 0.;
+    size_t nMol = molecules.size();
+    real_t density = 0;
+    for (size_t i = 0; i < nMol; i++) {
+      Molecule& m1 = molecules[i];
+      vSum += m1.velocity;
+      float vv = vcl::horizontal_add(vcl::square(m1.velocity));
+      vvSum += vv;
+
+      density += mass(m1.type);
+    }
+    // Compute length times width times height of `boundingBoxWalls`:
+    real_t lwh = abs((boundingBoxWalls[0][0] - boundingBoxWalls[1][0]) * (boundingBoxWalls[0][1] - boundingBoxWalls[1][1]) * (boundingBoxWalls[0][2] - boundingBoxWalls[1][2]));
+    density /= lwh; // "density = mass / volume" is done here.
+
+    out_kineticEnergy = (0.5 * vvSum) / nMol;
+    out_totalEnergy = out_kineticEnergy + (uSum / nMol);
+    const size_t NDIM = 3; // Number of dimensions in the simulation
+    out_pressure = density * (vvSum + virSum) / (nMol * NDIM);
+    out_temperature = vvSum / (nMol * NDIM); // based on page 30 of the art of molecular dynamics simulation pdf
   }
 }
