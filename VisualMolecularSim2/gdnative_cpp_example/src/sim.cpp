@@ -38,12 +38,17 @@ namespace sim {
     }
   }
 
-  void Molecule::applyForce(Vector3 f, float deltaTime) {
-    velocity += f / mass(type) * deltaTime;
+  void ForceInfo::applyForce(Vector3 f) {
+    acceleration += f;
   }
 
   void Molecule::updatePos(float deltaTime) {
     pos += velocity * deltaTime;
+  }
+
+  void Molecule::finalizeForces(ForceInfo& forceInfo, float deltaTime) {
+    velocity += forceInfo.acceleration / mass(type) * deltaTime;
+    forceInfo.acceleration = {0};
   }
 
   // sigma: length scale
@@ -65,24 +70,31 @@ namespace sim {
   }
 #undef pow
 
-  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<Wall>& walls) {
+  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<ForceInfo>& moleculeForces, std::vector<Wall>& walls) {
     for (size_t i = 0; i < molecules.size(); i++) {
       Molecule& m1 = molecules[i];
+      ForceInfo f1 = moleculeForces[i];
       for (size_t j = 0; j < molecules.size(); j++) {
 	if (i == j) continue;
 	Molecule& m2 = molecules[j];
+	ForceInfo f2 = moleculeForces[j];
 	
 	Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos);
-	m1.applyForce(force, deltaTime);
+	f1.applyForce(force);
       }
 
       for (size_t j = 0; j < walls.size(); j++) {
 	Wall& m2 = walls[j];
 
 	Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos);
-	m1.applyForce(force, deltaTime);
+	f1.applyForce(force);
       }
+    }
 
+    for (size_t i = 0; i < molecules.size(); i++) {
+      Molecule& m1 = molecules[i];
+      ForceInfo f1 = moleculeForces[i];
+      m1.finalizeForces(f1, deltaTime);
       m1.updatePos(deltaTime);
     }
   }

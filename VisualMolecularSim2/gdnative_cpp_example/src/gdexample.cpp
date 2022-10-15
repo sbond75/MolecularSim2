@@ -23,6 +23,8 @@
 #include "rng.hpp"
 #include <InputEventKey.hpp>
 #include <GlobalConstants.hpp>
+#include <chrono>
+//#include "lib/chrono_io"
 
 using namespace godot;
 
@@ -119,6 +121,8 @@ void GDExample::initSim(double timeSkip_) {
                 sim::Vector3(rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), 0)
             });
     }
+    moleculeForces.reserve(molecules.capacity());
+    moleculeForces.resize(molecules.size());
 
     // Make air
     std::vector<real_t> airComposition = {0.7808, 0.2095, 0.0093, 0.0004}; // https://en.wikipedia.org/wiki/Atmosphere_of_Earth : "By mole fraction (i.e., by number of molecules), dry air contains 78.08% nitrogen, 20.95% oxygen, 0.93% argon, 0.04% carbon dioxide, and small amounts of other gases."
@@ -268,9 +272,18 @@ void GDExample::_process(float delta) {
     // // //
 
 
-    // Simulate a bit
-    sim::iterate(sigma, epsilon, delta * timeScale, molecules, walls);
+    // Simulate a bit //
     
+    // https://stackoverflow.com/questions/1487695/c-cross-platform-high-resolution-timer
+    typedef std::chrono::high_resolution_clock Clock;
+    auto t1 = Clock::now();
+
+    sim::iterate(sigma, epsilon, delta * timeScale, molecules, moleculeForces, walls);
+    
+    auto t2 = Clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count() / 1'000'000.0 << " milliseconds" << '\n';
+
+    // //
 
     updateNumber++;
 }
@@ -300,6 +313,7 @@ void GDExample::_input(Variant event) {
 
 void GDExample::restart() {
     molecules.clear();
+    moleculeForces.clear();
     walls.clear();
     
     double oldTimeScale = timeScale;

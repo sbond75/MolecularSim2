@@ -32,6 +32,7 @@ private:
     Transform originalTransform;
 
     std::vector<sim::Molecule> molecules;
+    std::vector<sim::ForceInfo> moleculeForces;
     std::vector<sim::Wall> walls;
     RandomNumberGenerator* rng, *air_rng;
     real_t sigma;
