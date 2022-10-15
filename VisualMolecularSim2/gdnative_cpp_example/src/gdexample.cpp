@@ -109,7 +109,7 @@ void GDExample::initSim(double timeSkip_) {
     // Make molecules
     size_t numAir = 1000;
     size_t num = 100 + numAir;
-    real_t epsilon = 1; //1;
+    real_t epsilon = 10; //1;
     real_t max = 7.5 * epsilon; //7.5;
     real_t velmax = 20;
     molecules.reserve(num);

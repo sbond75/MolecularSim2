@@ -94,7 +94,7 @@ namespace sim {
     for (size_t i = 0; i < molecules.size(); i++) {
       Molecule& m1 = molecules[i];
       ForceInfo& f1 = moleculeForces[i];
-      //m1.finalizeForces(f1, deltaTime);
+      m1.finalizeForces(f1, deltaTime);
       m1.updatePos(deltaTime);
     }
   }
