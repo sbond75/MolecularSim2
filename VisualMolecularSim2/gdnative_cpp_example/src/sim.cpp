@@ -73,11 +73,11 @@ namespace sim {
   void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<ForceInfo>& moleculeForces, std::vector<Wall>& walls) {
     for (size_t i = 0; i < molecules.size(); i++) {
       Molecule& m1 = molecules[i];
-      ForceInfo f1 = moleculeForces[i];
+      ForceInfo& f1 = moleculeForces[i];
       for (size_t j = 0; j < molecules.size(); j++) {
 	if (i == j) continue;
 	Molecule& m2 = molecules[j];
-	ForceInfo f2 = moleculeForces[j];
+	ForceInfo& f2 = moleculeForces[j];
 	
 	Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos);
 	f1.applyForce(force);
@@ -93,8 +93,8 @@ namespace sim {
 
     for (size_t i = 0; i < molecules.size(); i++) {
       Molecule& m1 = molecules[i];
-      ForceInfo f1 = moleculeForces[i];
-      m1.finalizeForces(f1, deltaTime);
+      ForceInfo& f1 = moleculeForces[i];
+      //m1.finalizeForces(f1, deltaTime);
       m1.updatePos(deltaTime);
     }
   }

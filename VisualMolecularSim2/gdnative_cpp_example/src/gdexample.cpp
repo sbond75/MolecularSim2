@@ -109,7 +109,7 @@ void GDExample::initSim(double timeSkip_) {
     // Make molecules
     size_t numAir = 1000;
     size_t num = 100 + numAir;
-    real_t epsilon = 10; //1;
+    real_t epsilon = 1; //1;
     real_t max = 7.5 * epsilon; //7.5;
     real_t velmax = 20;
     molecules.reserve(num);
@@ -122,7 +122,7 @@ void GDExample::initSim(double timeSkip_) {
             });
     }
     moleculeForces.reserve(molecules.capacity());
-    moleculeForces.resize(molecules.size());
+    moleculeForces.resize(molecules.size(), {0});
 
     // Make air
     std::vector<real_t> airComposition = {0.7808, 0.2095, 0.0093, 0.0004}; // https://en.wikipedia.org/wiki/Atmosphere_of_Earth : "By mole fraction (i.e., by number of molecules), dry air contains 78.08% nitrogen, 20.95% oxygen, 0.93% argon, 0.04% carbon dioxide, and small amounts of other gases."
