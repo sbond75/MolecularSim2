@@ -25,6 +25,7 @@
 #include <GlobalConstants.hpp>
 //#include "lib/chrono_io"
 #include "timing.hpp"
+#include "string.hpp"
 
 using namespace godot;
 
@@ -311,13 +312,33 @@ void GDExample::_process(float delta) {
 
         t1 = timing::startTimer();
 
-        real_t ke, te, p, t, d;
+        real_t ke, te, p, t /*eV*/, d /*Daltons per Å*/, pe = uSum/molecules.size();
+        double eVToJoules = 1.602176565e-19 // https://www.rapidtables.com/convert/energy/ev-to-joule.html
+            , kelvinToJoules = 1.380649e-23 // https://en.wikipedia.org/wiki/Electronvolt -> https://en.wikipedia.org/wiki/Boltzmann_constant : Boltzmann's constant (k_B) is 1.380649×10^−23 in Joules per Kelvin.
+            , joulesToKelvin = 1.0 / kelvinToJoules
+            , eVToKelvin = eVToJoules * joulesToKelvin
+            , toNano = 1.0 / 1'000'000'000
+            ;
+        auto kelvinToCelcius = [](double kelvin) { return kelvin - 273.15; }; // https://www.google.com/search?q=kelvin+to+c&oq=&aqs=chrome.1.69i57j6j0i20i263i433i512j0i20i263i512j0i67j0i512l5.1799j0j7&sourceid=chrome&ie=UTF-8
+        auto celciusToFarenheit = [](double celcius) { return (celcius * 9.0/5.0) + 32.0; }; // https://www.google.com/search?q=celcius+to+farenheit&oq=celcius+to+fa&aqs=chrome.1.69i57j0i67l2j0i10i433i512j0i512l2j0i10i512l2j0i512j0i10i512.1657j0j7&sourceid=chrome&ie=UTF-8
+        auto kelvinToFarenheit = [&](double kelvin) { return celciusToFarenheit(kelvinToCelcius(kelvin)); };
+        auto eVToFarenheit = [&](double eV) { return kelvinToFarenheit(eV * eVToKelvin); };
+
         sim::evaluateProperties(molecules, boundingBoxWalls, uSum, virSum, ke, te, p, t, d);
-        Godot::print(R"(  Kinetic energy: {0}
-  Total energy: {1}
-  Pressure: {2}
-  Temperature: {3}
-  Density: {4})", ke, te, p, t, d);
+        Godot::print(
+  R"(  Kinetic energy:    {0} nJ        ({6} eV)
+  Potential energy:  {5} nJ        ({7} eV)
+  Total energy:      {1} nJ        ({8} eV)
+  Pressure:          {2}
+  Temperature:       {3} °F
+  Density:           {4} Da/Å)"
+  , string::doubleToGodotString(ke * eVToJoules * toNano)
+  , string::doubleToGodotString(te * eVToJoules * toNano)
+  , p
+  , eVToFarenheit(t)
+  , d
+  , string::doubleToGodotString(pe * eVToJoules * toNano)
+  , ke, pe, te);
 
         timing::stopTimer(t1, "evaluateProperties");
         

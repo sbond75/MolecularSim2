@@ -89,10 +89,11 @@ namespace sim {
   }
 #undef pow
   
-  // sigma: length scale
-  // epsilon: governs the strength of the interaction
-  // p1: position of molecule 1 (vector (bold) "r_i")
-  // p2: position of molecule 2 (vector "r_j")
+  // sigma: length scale. units: Å
+  // epsilon: governs the strength of the interaction. units: eV
+  // p1: position of molecule 1 (vector (bold) "r_i"). units: Å
+  // p2: position of molecule 2 (vector "r_j"). units: Å
+  // Returns units: eV
   real_t potentialEnergyOnMolecule(real_t sigma, real_t epsilon, real_t dist) {
     // r_c: maximum distance
     real_t r_c = pow(2, 1.0/6) * sigma;
