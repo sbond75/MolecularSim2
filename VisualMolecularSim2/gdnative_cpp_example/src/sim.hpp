@@ -38,6 +38,7 @@ namespace sim {
     Vector3 pos;
     Vector3 velocity;
 
+    //[deprecated:badImpl] void applyForce(Vector3 f, float deltaTime);
     void updatePos(float deltaTime);
 
     void finalizeForces(ForceInfo& forceInfo, float deltaTime);
