@@ -28,6 +28,7 @@ private:
     bool running;
     size_t updateNumber;
     Vector3 adjustmentForPosition;
+    double lastSimTime; // Last frame time for the simulation
     double averageSimTime; // Average frame time for the simulation (how long it has been taking)
 
     Transform originalTransform;
@@ -56,6 +57,7 @@ public:
 
     void _process(float delta);
     void _input(Variant event);
+    double _getLastSimTime();
 
     void _draw();
 

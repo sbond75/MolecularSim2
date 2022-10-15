@@ -1,6 +1,7 @@
-[gd_scene load_steps=14 format=2]
+[gd_scene load_steps=15 format=2]
 
 [ext_resource path="res://Molecule.gdshader" type="Shader" id=1]
+[ext_resource path="res://Control2.gd" type="Script" id=2]
 [ext_resource path="res://assets/maujoe.camera_control/scripts/camera_control_gui.gd" type="Script" id=3]
 [ext_resource path="res://assets/maujoe.camera_control/scripts/camera_control.gd" type="Script" id=4]
 [ext_resource path="res://gdnative_cpp_example/demo/bin/gdexample.gdns" type="Script" id=5]
@@ -83,3 +84,12 @@ directional_shadow_mode = 0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource( 8 )
+
+[node name="Control2" type="Control" parent="."]
+margin_right = 40.0
+margin_bottom = 40.0
+script = ExtResource( 2 )
+
+[node name="Label" type="Label" parent="Control2"]
+margin_right = 40.0
+margin_bottom = 14.0

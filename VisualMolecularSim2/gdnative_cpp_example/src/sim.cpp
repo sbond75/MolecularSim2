@@ -2,9 +2,12 @@
 
 #include <cmath>
 #include <string>
+#include "memoization.hpp"
 
 // BROKEN?/slow?:
 // extern "C" double fs_power(double x, long n);
+
+extern "C" float sqrt14(float x);
 
 // https://www.agner.org/optimize/optimizing_assembly.pdf
 // Example 6.1a. Raise double x to the power of int n.
@@ -19,6 +22,44 @@ double ipow (double x, int n) {
  if (n < 0) y = 1.0 / y; // reciprocal if n is negative
  return y; // return y = pow(x,n)
 }
+
+// NOTE: this function sometimes hangs forever:
+// // Example 6.1f. Gnu-style inline assembly, Intel syntax
+// double ipow (double x, int n) {
+//  double y;
+//  __asm__ (
+//  ".intel_syntax noprefix \n" // use Intel syntax for convenience
+//  "cdq \n"
+//  "xor eax, edx \n"
+//  "sub eax, edx \n"
+//  "fld1 \n"
+//  "jz 9f \n"
+//  ".att_syntax prefix \n" // AT&T syntax needed for %[xx]
+//  "fldl %[xx] \n" // memory operand substituted with x
+//  ".intel_syntax noprefix \n" // switch to Intel syntax again
+//  "jmp 2f \n"
+//  "1: \n"
+//  "fmul st(0), st(0) \n"
+//  "2: \n"
+//  "shr eax, 1 \n"
+//  "jnc 1b \n"
+//  "fmul st(1), st(0) \n"
+//  "jnz 1b \n"
+//  "fstp st(0) \n"
+//  "test edx, edx \n"
+//  "jns 9f \n"
+//  "fld1 \n"
+//  "fdivrp \n"
+//  "9: \n"
+//  ".att_syntax prefix \n" // switch back to AT&T syntax
+//  // output operands:
+//  : "=t" (y) // output in top-of-stack goes to y
+//  // input operands:
+//  : [xx] "m" (x), "a" (n) // input memory %[x] for x, eax for n
+//  // clobbered registers:
+//  : "%edx", "%st(1)" ); // edx and st(1) are modified
+//  return y;
+// }
 
 namespace sim {
 
@@ -72,6 +113,8 @@ namespace sim {
 
 //#define pow fs_power
 #define pow ipow
+//#define sqrt memoization::sqrt_memoize
+//#define sqrt sqrt14
     //[option:vcl]//
     out_distSquared = vcl::horizontal_add(vcl::square(p1 - p2));
     out_dist = sqrt(out_distSquared); // "r" aka "r_ij"
@@ -84,7 +127,8 @@ namespace sim {
       out_forceMagnitude = 0;
       return Vector3(0, 0, 0, 0); //Vector3::ZERO;
     }
-    out_forceMagnitude = 48 * epsilon / (sigma * sigma) * (pow(sigma / out_dist, 14) - 0.5 * pow(sigma / out_dist, 8));
+    static double cached1 = 48 * epsilon / (sigma * sigma);
+    out_forceMagnitude = cached1 * (pow(sigma / out_dist, 14) - 0.5 * pow(sigma / out_dist, 8));
     return out_forceMagnitude * (p1 - p2);
   }
 #undef pow
@@ -114,11 +158,12 @@ namespace sim {
     real_t fcVal;
     float distSquared;
     real_t dist;
-    if (molecules.size() > 0) {
-      for (size_t i = 0; i < molecules.size() - 1; i++) {
+    size_t nMol = molecules.size();
+    if (nMol > 0) {
+      for (size_t i = 0; i < nMol - 1; i++) {
         Molecule& m1 = molecules[i];
         ForceInfo& f1 = moleculeForces[i]; //[non-deprecated:badImpl]
-        for (size_t j = i + 1; j < molecules.size(); j++) {
+        for (size_t j = i + 1; j < nMol; j++) {
           Molecule& m2 = molecules[j];
           ForceInfo& f2 = moleculeForces[j]; //[non-deprecated:badImpl]
 
@@ -130,7 +175,8 @@ namespace sim {
           f2.applyForce(-force); // https://pythoninchemistry.org/sim_and_scat/molecular_dynamics/build_an_md
         }
 
-        for (size_t j = 0; j < walls.size(); j++) {
+        size_t nWall = walls.size();
+        for (size_t j = 0; j < nWall; j++) {
           Wall& m2 = walls[j];
 
           Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos, fcVal, distSquared, dist);
@@ -145,7 +191,7 @@ namespace sim {
     }
   
     //[non-deprecated:badImpl]//
-    for (size_t i = 0; i < molecules.size(); i++) {
+    for (size_t i = 0; i < nMol; i++) {
       Molecule& m1 = molecules[i];
       ForceInfo& f1 = moleculeForces[i];
       m1.finalizeForces(f1, deltaTime);

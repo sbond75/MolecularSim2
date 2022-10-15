@@ -59,6 +59,7 @@ void initPython_do_once()
 void GDExample::_register_methods() {
     register_method("_process", &GDExample::_process);
     register_method("_input", &GDExample::_input);
+    register_method("_getLastSimTime", &GDExample::_getLastSimTime);
 }
 
 GDExample::GDExample()
@@ -84,6 +85,7 @@ void GDExample::initSim(double timeSkip_) {
     timeSkip = 0.0;
     running = true;
     updateNumber = 0;
+    lastSimTime = 0.0;
     averageSimTime = 0.0;
     
     // Configurable //
@@ -111,7 +113,7 @@ void GDExample::initSim(double timeSkip_) {
     air_rng->set_seed(seed);
     
     // Make molecules
-    size_t numAir = 1000;
+    size_t numAir = 10000; //10; //1000;
     size_t num = 100 + numAir;
     real_t epsilon = 100; //10; //1;
     real_t max = 7.5 * epsilon; //7.5;
@@ -291,7 +293,7 @@ void GDExample::_process(float delta) {
     auto t1 = timing::startTimer();
 
     real_t uSum, virSum;
-    sim::iterate(sigma, epsilon, delta * timeScale, molecules, moleculeForces, walls, boundingBoxWalls, uSum, virSum);
+    sim::iterate(sigma, epsilon, /* delta * */ timeScale, molecules, moleculeForces, walls, boundingBoxWalls, uSum, virSum);
 
     // Stability enforcement (since some molecules spawn on top of each other at random, giving them tons of kinetic energy it seems..)
     if (updateNumber <= 100) {
@@ -305,6 +307,7 @@ void GDExample::_process(float delta) {
     }
 
     double ms = timing::stopTimer(t1);
+    lastSimTime = ms;
     averageSimTime += ms;
     if (updateNumber % 60 == 0) {
         Godot::print("{0} {1}", averageSimTime / 60, "milliseconds");
@@ -371,6 +374,10 @@ void GDExample::_input(Variant event) {
         // Restart sim
         restart();
     }
+}
+
+double GDExample::_getLastSimTime() {
+    return lastSimTime;
 }
 
 void GDExample::restart() {

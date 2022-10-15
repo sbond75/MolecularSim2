@@ -8,7 +8,7 @@ global _fs_power
 
 ;// Raise 'x' to the power 'n' (INT-only) in ASM by the great Agner Fog!
 
-;// extern double fs_power(double x, long n);
+;// extern "C" double fs_power(double x, long n);
 _fs_power:
     MOV  EAX, EDI     ;// Move 'n' to eax
 ;// abs(n) is calculated by inverting all bits and adding 1 if n < 0:
@@ -49,3 +49,10 @@ RETZERO:
     ;; RET  4
     ret
 ;//}}
+
+;// SQRTPS instruction from https://www.felixcloutier.com/x86/sqrtps , inspired by https://www.codeproject.com/Articles/69941/Best-Square-Root-Method-Algorithm-Function-Precisi
+;// extern "C" float sqrt14(float x);
+global _sqrt14
+_sqrt14:
+	SQRTPS xmm0, xmm0
+	ret
