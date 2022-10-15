@@ -11,6 +11,7 @@ opts = Variables([], ARGUMENTS)
 
 # Gets the standard flags CC, CCX, etc.
 env = DefaultEnvironment()
+env['AS'] = str(subprocess.check_output(['which', 'nasm']), 'utf-8').rstrip('\n') + ' -f macho64'
 scons_compiledb.enable_with_cmdline(env) #scons_compiledb.enable(env) # https://pypi.org/project/scons-compiledb/0.4.7/
 
 # Define our options
@@ -120,7 +121,7 @@ env.Append(LIBS=[cpp_library])
 
 # tweak this if you want to use different folders, or more folders, to store your source code in.
 env.Append(CPPPATH=['src/'])
-sources = Glob('src/*.cpp')
+sources = Glob('src/*.cpp') #+ Glob('src/*.s')
 print("sources:",sources)
 
 library = env.SharedLibrary(target=env['target_path'] + env['target_name'] , source=sources)

@@ -1,9 +1,20 @@
 #include <Vector3.hpp>
+#include <Defs.hpp> // real_t
 #include <vector>
+
+#define VCL_NAMESPACE vcl
+#include <version2/vectorclass.h> // https://github.com/vectorclass/version2 -- Agner Fog's SIMD vector library
 
 using namespace godot;
 
 namespace sim {
+
+  using Vector3 = vcl::Vec4f;
+  static inline ::Vector3 vec3ToGodotVec3(Vector3 simVec3) {
+    real_t retval[3];
+    simVec3.store_partial(3, retval);
+    return *reinterpret_cast<::Vector3*>(retval);
+  }
 
   enum MoleculeType {
     Nitrogen,

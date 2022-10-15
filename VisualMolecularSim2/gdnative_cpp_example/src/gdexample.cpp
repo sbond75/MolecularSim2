@@ -114,9 +114,9 @@ void GDExample::initSim(double timeSkip_) {
     for (size_t i = 0; i < num; i++) {
         molecules.push_back({
                 sim::MoleculeType::Argon,
-                Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max)),
+                sim::Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max), 0),
                 //Vector3::ZERO
-                Vector3(rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax))
+                sim::Vector3(rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), 0)
             });
     }
 
@@ -151,7 +151,7 @@ void GDExample::initSim(double timeSkip_) {
             for (real_t k = -max; k < max; k+=epsilon) {
                 if ((i < max - epsilon && j < max - epsilon && k < max - epsilon) && (i > -max && j > -max && k > -max)) continue;
                 walls.push_back({
-                        Vector3(i,j,k)
+                        sim::Vector3(i,j,k,0)
                     });
             }
         }
@@ -203,7 +203,7 @@ void GDExample::_process(float delta) {
     mm->set_instance_count(numAtoms + walls.size());
     for (size_t i = 0; i < numAtoms; i++) {
         sim::Molecule& m = molecules[i];
-        Vector3 pos = m.pos;
+        Vector3 pos = sim::vec3ToGodotVec3(m.pos);
         mm->set_instance_transform(i, Transform(Basis(), pos));
     }
 
@@ -211,7 +211,7 @@ void GDExample::_process(float delta) {
     //Godot::print("Color format: {0}", mm->get_color_format());
     for (size_t i = 0; i < walls.size(); i++) {
         sim::Wall& m = walls[i];
-        Vector3 pos = m.pos;
+        Vector3 pos = sim::vec3ToGodotVec3(m.pos);
         mm->set_instance_transform(numAtoms + i, Transform(Basis(), pos));
         mm->set_instance_color(numAtoms + i, Color(0.3, 0.4, 0.5));
     }

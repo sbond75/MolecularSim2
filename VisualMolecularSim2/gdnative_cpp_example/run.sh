@@ -10,7 +10,12 @@ cd ../..
 prog="/Applications/Godot_mono.app/Contents/MacOS/Godot"
 args="--path ./VisualMolecularSim2"
 if [ -z "$noLLDB" ]; then # Can provide `noLLDB=1 bash run.sh` on the command line to run without LLDB.
-    cmd="lldb  -o run $prog -- $args"
+    if [ -z "$noRun" ]; then # Can provide `noRun=1 bash run.sh` on the command line to run without starting the debugged program right away.
+	run="-o run"
+    else
+	run=
+    fi
+    cmd="lldb $run $prog -- $args"
 else
     cmd="$prog $args"
 fi

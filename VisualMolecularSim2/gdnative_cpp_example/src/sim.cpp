@@ -1,5 +1,24 @@
 #include "sim.hpp"
 
+#include <cmath>
+
+// BROKEN?/slow?:
+// extern "C" double fs_power(double x, long n);
+
+// https://www.agner.org/optimize/optimizing_assembly.pdf
+// Example 6.1a. Raise double x to the power of int n.
+double ipow (double x, int n) {
+ unsigned int nn = abs(n); // absolute value of n
+ double y = 1.0; // used for multiplication
+ while (nn != 0) { // loop for each bit in nn
+   if (nn & 1) y *= x; // multiply if bit = 1
+   x *= x; // square x
+   nn >>= 1; // get next bit of nn
+ }
+ if (n < 0) y = 1.0 / y; // reciprocal if n is negative
+ return y; // return y = pow(x,n)
+}
+
 namespace sim {
 
   real_t mass(MoleculeType type) {
@@ -35,13 +54,16 @@ namespace sim {
     // r_c: maximum distance
     real_t r_c = pow(2, 1.0/6) * sigma;
 
-    real_t dist = p1.distance_to(p2); // "r" aka "r_ij"
+//#define pow fs_power
+#define pow ipow
+    real_t dist = sqrt(vcl::horizontal_add(vcl::square(p1 - p2))); //p1.distance_to(p2); // "r" aka "r_ij"
     if (dist >= r_c) {
       // Maximum distance reached
-      return Vector3::ZERO;
+      return Vector3(0, 0, 0, 0); //Vector3::ZERO;
     }
     return 48 * epsilon / (sigma * sigma) * (pow(sigma / dist, 14) - 0.5 * pow(sigma / dist, 8)) * (p1 - p2);
   }
+#undef pow
 
   void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<Wall>& walls) {
     for (size_t i = 0; i < molecules.size(); i++) {

@@ -19,5 +19,7 @@ mkShell {
     
     scons
     pkg-config
+    nasm
+    which
   ];
 }
