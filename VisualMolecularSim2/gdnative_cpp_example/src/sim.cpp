@@ -1,6 +1,7 @@
 #include "sim.hpp"
 
 #include <cmath>
+#include <string>
 
 // BROKEN?/slow?:
 // extern "C" double fs_power(double x, long n);
@@ -48,10 +49,15 @@ namespace sim {
   // }
 
   void Molecule::updatePos(float deltaTime) {
-    pos += velocity * deltaTime;
+    Vector3 temp = velocity * deltaTime;
+    Vector3 temp2;
+    temp2.load_partial(3, reinterpret_cast<float*>(&temp));
+    pos += temp2;
   }
 
   void Molecule::finalizeForces(ForceInfo& forceInfo, float deltaTime) {
+    // std::string s = std::to_string(forceInfo.acceleration[0]) + " " + std::to_string(forceInfo.acceleration[1]) + " " + std::to_string(forceInfo.acceleration[2]);
+    // Godot::print(s.c_str());
     velocity += forceInfo.acceleration / mass(type) * deltaTime;
     forceInfo.acceleration = {0};
   }
@@ -65,8 +71,13 @@ namespace sim {
     real_t r_c = pow(2, 1.0/6) * sigma;
 
 //#define pow fs_power
-#define pow ipow
-    real_t dist = sqrt(vcl::horizontal_add(vcl::square(p1 - p2))); //p1.distance_to(p2); // "r" aka "r_ij"
+//#define pow ipow
+    //[option:vcl]//
+    real_t dist = sqrt(vcl::horizontal_add(vcl::square(p1 - p2))); // "r" aka "r_ij"
+    //
+    //[non-option:vcl]//
+    // real_t dist = p1.distance_to(p2); // "r" aka "r_ij"
+    // //
     if (dist >= r_c) {
       // Maximum distance reached
       return Vector3(0, 0, 0, 0); //Vector3::ZERO;
@@ -75,7 +86,7 @@ namespace sim {
   }
 #undef pow
 
-  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<ForceInfo>& moleculeForces, std::vector<Wall>& walls) {
+  void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<ForceInfo>& moleculeForces, std::vector<Wall>& walls, ::Vector3 boundingBoxWalls[2]) {
     for (size_t i = 0; i < molecules.size(); i++) {
       Molecule& m1 = molecules[i];
       ForceInfo& f1 = moleculeForces[i]; //[non-deprecated:badImpl]
@@ -106,6 +117,17 @@ namespace sim {
       ForceInfo& f1 = moleculeForces[i];
       m1.finalizeForces(f1, deltaTime);
       m1.updatePos(deltaTime);
+
+      // Bounce on walls
+      if (m1.pos[0] < boundingBoxWalls[0][0] || m1.pos[0] > boundingBoxWalls[1][0]) {
+        m1.velocity.insert(0, -m1.velocity[0]);
+      }
+      if (m1.pos[1] < boundingBoxWalls[0][1] || m1.pos[1] > boundingBoxWalls[1][1]) {
+        m1.velocity.insert(1, -m1.velocity[1]);
+      }
+      if (m1.pos[2] < boundingBoxWalls[0][2] || m1.pos[2] > boundingBoxWalls[1][2]) {
+        m1.velocity.insert(2, -m1.velocity[2]);
+      }
     }
     // //
   }

@@ -83,6 +83,7 @@ void GDExample::initSim(double timeSkip_) {
     timeSkip = 0.0;
     running = true;
     updateNumber = 0;
+    averageSimTime = 0.0;
     
     // Configurable //
     timeScale = 0.1; //0.80; //1;//15; //90; //5; //0.5; //0.1;
@@ -101,6 +102,8 @@ void GDExample::initSim(double timeSkip_) {
     air_rng = RandomNumberGenerator::_new();
     sigma = 125.7;
     epsilon = 0.3345;
+    // sigma=1;
+    // epsilon=1;
 
     int64_t seed = 1024;
     rng->set_seed(seed);
@@ -109,16 +112,24 @@ void GDExample::initSim(double timeSkip_) {
     // Make molecules
     size_t numAir = 1000;
     size_t num = 100 + numAir;
-    real_t epsilon = 10; //1;
+    real_t epsilon = 100; //10; //1;
     real_t max = 7.5 * epsilon; //7.5;
-    real_t velmax = 20;
+    real_t velmax = 0; //20;
     molecules.reserve(num);
     for (size_t i = 0; i < num; i++) {
         molecules.push_back({
                 sim::MoleculeType::Argon,
-                sim::Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max), 0),
+                sim::Vector3(rng->randf_range(-max, max), rng->randf_range(-max, max), rng->randf_range(-max, max)
+                             //[option:vcl]//
+                             , 0
+                             // //
+                             ),
                 //Vector3::ZERO
-                sim::Vector3(rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), 0)
+                sim::Vector3(rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax), rng->randf_range(-velmax, velmax)
+                             //[option:vcl]//
+                             , 0
+                             // //
+                             )
             });
     }
     moleculeForces.reserve(molecules.capacity());
@@ -147,19 +158,21 @@ void GDExample::initSim(double timeSkip_) {
     }
 
     // Make walls
-    num = 1000;
+    // num = 1000;
     max = max * (1.0 + 1.0 / 3); //10;
-    walls.reserve(num);
-    for (real_t i = -max; i < max; i+=epsilon) {
-        for (real_t j = -max; j < max; j+=epsilon) {
-            for (real_t k = -max; k < max; k+=epsilon) {
-                if ((i < max - epsilon && j < max - epsilon && k < max - epsilon) && (i > -max && j > -max && k > -max)) continue;
-                walls.push_back({
-                        sim::Vector3(i,j,k,0)
-                    });
-            }
-        }
-    }
+    boundingBoxWalls[0] = Vector3(-max, -max, -max);
+    boundingBoxWalls[1] = Vector3(max, max, max);
+    // walls.reserve(num);
+    // for (real_t i = -max; i < max; i+=epsilon) {
+    //     for (real_t j = -max; j < max; j+=epsilon) {
+    //         for (real_t k = -max; k < max; k+=epsilon) {
+    //             if ((i < max - epsilon && j < max - epsilon && k < max - epsilon) && (i > -max && j > -max && k > -max)) continue;
+    //             walls.push_back({
+    //                     sim::Vector3(i,j,k,0)
+    //                 });
+    //         }
+    //     }
+    // }
     
     static_assert(sizeof(uint64_t) >= sizeof(size_t));
     Godot::print("Walls: {0}", (uint64_t)walls.size()); // Based on `String("Hello, {0}!").format(Array::make(target))` in code example on https://gamedevadventures.posthaven.com/using-c-plus-plus-and-gdnative-in-godot-part-1
@@ -278,10 +291,26 @@ void GDExample::_process(float delta) {
     typedef std::chrono::high_resolution_clock Clock;
     auto t1 = Clock::now();
 
-    sim::iterate(sigma, epsilon, delta * timeScale, molecules, moleculeForces, walls);
+    sim::iterate(sigma, epsilon, delta * timeScale, molecules, moleculeForces, walls, boundingBoxWalls);
+
+    // Stability enforcement (since some molecules spawn on top of each other at random, giving them tons of kinetic energy it seems..)
+    if (updateNumber <= 100) {
+        for (size_t i = 0; i < molecules.size(); i++) {
+            sim::Molecule& m1 = molecules[i];
+            m1.velocity *= 0.5;
+        }
+    }
+    else if (updateNumber == 101) {
+        Godot::print("Stability enforced");
+    }
     
     auto t2 = Clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count() / 1'000'000.0 << " milliseconds" << '\n';
+    double ms = std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count() / 1'000'000.0;
+    averageSimTime += ms;
+    if (updateNumber % 60 == 0) {
+        Godot::print("{0} {1}", averageSimTime / 60, "milliseconds");
+        averageSimTime = 0;
+    }
 
     // //
 
@@ -295,12 +324,12 @@ void GDExample::_input(Variant event) {
     double mods = (joy_btn->get_shift() ? 10.0 : 1.0) * (joy_btn->get_alt() ? 100.0 : 1.0);
     if (joy_btn->is_pressed() && joy_btn->get_scancode() == GlobalConstants::KEY_UP) {
         // Speed up time
-        timeScale += 0.0001 * mods;
+        timeScale += 0.01 * mods;
         Godot::print("timeScale: {0}", timeScale);
     }
     if (joy_btn->is_pressed() && joy_btn->get_scancode() == GlobalConstants::KEY_DOWN) {
         // Slow down time
-        timeScale -= 0.0001 * mods;
+        timeScale -= 0.01 * mods;
         if (timeScale < 0)
             timeScale = 0;
         Godot::print("timeScale: {0}", timeScale);

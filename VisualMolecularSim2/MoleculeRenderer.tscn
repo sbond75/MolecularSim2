@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=2]
+[gd_scene load_steps=14 format=2]
 
 [ext_resource path="res://Molecule.gdshader" type="Shader" id=1]
 [ext_resource path="res://assets/maujoe.camera_control/scripts/camera_control_gui.gd" type="Script" id=3]
@@ -11,8 +11,8 @@ shader = ExtResource( 1 )
 
 [sub_resource type="SphereMesh" id=3]
 material = SubResource( 2 )
-radius = 0.5
-height = 1.0
+radius = 10.0
+height = 20.0
 radial_segments = 12
 rings = 6
 
@@ -43,6 +43,17 @@ mesh = SubResource( 5 )
 transform_array = PoolVector3Array( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
 custom_data_array = PoolColorArray( 0, 0, 0, 0 )
 
+[sub_resource type="ProceduralSky" id=7]
+radiance_size = 0
+sky_top_color = Color( 0.231373, 0.341176, 0.4, 1 )
+sky_horizon_color = Color( 0.396078, 0.431373, 0.462745, 1 )
+sun_energy = 0.37
+
+[sub_resource type="Environment" id=8]
+background_mode = 2
+background_sky = SubResource( 7 )
+ambient_light_energy = 4.72
+
 [node name="Spatial" type="Spatial"]
 
 [node name="Camera" type="Camera" parent="."]
@@ -68,3 +79,7 @@ multimesh = SubResource( 6 )
 
 [node name="DirectionalLight" type="DirectionalLight" parent="."]
 transform = Transform( -1, 6.18172e-08, -6.18172e-08, 0, 0.707107, 0.707107, 8.74228e-08, 0.707107, -0.707107, 0, 0, 0 )
+directional_shadow_mode = 0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource( 8 )

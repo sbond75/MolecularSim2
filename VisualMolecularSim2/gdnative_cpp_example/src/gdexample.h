@@ -28,12 +28,14 @@ private:
     bool running;
     size_t updateNumber;
     Vector3 adjustmentForPosition;
+    double averageSimTime; // Average frame time for the simulation (how long it has been taking)
 
     Transform originalTransform;
 
     std::vector<sim::Molecule> molecules;
     std::vector<sim::ForceInfo> moleculeForces;
     std::vector<sim::Wall> walls;
+    Vector3 boundingBoxWalls[2] /*top-left-back x,y,z and then bottom-right-front x,y,z*/;
     RandomNumberGenerator* rng, *air_rng;
     real_t sigma;
     real_t epsilon;
