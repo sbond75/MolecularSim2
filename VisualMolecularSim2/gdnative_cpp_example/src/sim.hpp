@@ -63,5 +63,5 @@ namespace sim {
   extern void iterate(real_t sigma, real_t epsilon, float deltaTime, std::vector<Molecule>& molecules, std::vector<ForceInfo>& moleculeForces, std::vector<Wall>& walls, ::Vector3 boundingBoxWalls[2] /*top-left-back x,y,z and then bottom-right-front x,y,z*/, real_t& out_uSum /*potential energy sum*/, real_t& out_virSum /*? is the sum of {forces applied times the radius squared}.*/);
 
   // Populates the given `out_` values with what the simulation indicates they are.
-  extern void evaluateProperties(std::vector<Molecule>& molecules,::Vector3 boundingBoxWalls[2] /*top-left-back x,y,z and then bottom-right-front x,y,z*/, real_t uSum, real_t virSum, real_t& out_kineticEnergy, real_t& out_totalEnergy, real_t& out_pressure, real_t& out_temperature);
+  extern void evaluateProperties(std::vector<Molecule>& molecules,::Vector3 boundingBoxWalls[2] /*top-left-back x,y,z and then bottom-right-front x,y,z*/, real_t uSum, real_t virSum, real_t& out_kineticEnergy, real_t& out_totalEnergy, real_t& out_pressure, real_t& out_temperature, real_t& out_density);
 }

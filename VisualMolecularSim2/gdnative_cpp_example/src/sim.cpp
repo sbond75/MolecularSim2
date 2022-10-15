@@ -164,7 +164,7 @@ namespace sim {
     // //
   }
 
-  void evaluateProperties(std::vector<Molecule>& molecules, ::Vector3 boundingBoxWalls[2], real_t uSum, real_t virSum, real_t& out_kineticEnergy, real_t& out_totalEnergy, real_t& out_pressure, real_t& out_temperature) {
+  void evaluateProperties(std::vector<Molecule>& molecules, ::Vector3 boundingBoxWalls[2], real_t uSum, real_t virSum, real_t& out_kineticEnergy, real_t& out_totalEnergy, real_t& out_pressure, real_t& out_temperature, real_t& out_density) {
     // Based on https://gist.github.com/lucazammataro/42c4423f2082306824f4dd3352dde807#file-rap_2_measurement_functions-py from the code block labelled "Code 10" on https://towardsdatascience.com/the-lennard-jones-potential-35b2bae9446c
     Vector3 vSum{0};
     real_t vvSum = 0.;
@@ -181,6 +181,7 @@ namespace sim {
     // Compute length times width times height of `boundingBoxWalls`:
     real_t lwh = abs((boundingBoxWalls[0][0] - boundingBoxWalls[1][0]) * (boundingBoxWalls[0][1] - boundingBoxWalls[1][1]) * (boundingBoxWalls[0][2] - boundingBoxWalls[1][2]));
     density /= lwh; // "density = mass / volume" is done here.
+    out_density = density;
 
     out_kineticEnergy = (0.5 * vvSum) / nMol;
     out_totalEnergy = out_kineticEnergy + (uSum / nMol);

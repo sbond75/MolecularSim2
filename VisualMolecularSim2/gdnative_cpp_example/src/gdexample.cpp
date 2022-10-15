@@ -311,12 +311,13 @@ void GDExample::_process(float delta) {
 
         t1 = timing::startTimer();
 
-        real_t ke, te, p, t;
-        sim::evaluateProperties(molecules, boundingBoxWalls, uSum, virSum, ke, te, p, t);
+        real_t ke, te, p, t, d;
+        sim::evaluateProperties(molecules, boundingBoxWalls, uSum, virSum, ke, te, p, t, d);
         Godot::print(R"(  Kinetic energy: {0}
   Total energy: {1}
   Pressure: {2}
-  Temperature: {3})", ke, te, p, t);
+  Temperature: {3}
+  Density: {4})", ke, te, p, t, d);
 
         timing::stopTimer(t1, "evaluateProperties");
         
