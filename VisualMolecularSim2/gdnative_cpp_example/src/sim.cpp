@@ -103,6 +103,15 @@ namespace sim {
     forceInfo.acceleration = {0};
   }
 
+  // https://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-sse-vector-sum-or-other-reduction
+  // float hsum_ps_sse3(__m128 v) {
+  //   __m128 shuf = _mm_movehdup_ps(v);        // broadcast elements 3,1 to 2,0
+  //   __m128 sums = _mm_add_ps(v, shuf);
+  //   shuf        = _mm_movehl_ps(shuf, sums); // high half -> low half
+  //   sums        = _mm_add_ss(sums, shuf);
+  //   return        _mm_cvtss_f32(sums);
+  // }
+  
   // sigma: length scale
   // epsilon: governs the strength of the interaction
   // p1: position of molecule 1 (vector (bold) "r_i")
@@ -115,8 +124,11 @@ namespace sim {
 #define pow ipow
 //#define sqrt memoization::sqrt_memoize
 //#define sqrt sqrt14
+    Vector3 r = p1 - p2;
     //[option:vcl]//
-    out_distSquared = vcl::horizontal_add(vcl::square(p1 - p2));
+    Vector3 squared = vcl::square(r);
+    //out_distSquared = hsum_ps_sse3(*reinterpret_cast<__m128*>(&squared));
+    out_distSquared = vcl::horizontal_add(squared);
     out_dist = sqrt(out_distSquared); // "r" aka "r_ij"
     //
     //[non-option:vcl]//
@@ -129,7 +141,7 @@ namespace sim {
     }
     static double cached1 = 48 * epsilon / (sigma * sigma);
     out_forceMagnitude = cached1 * (pow(sigma / out_dist, 14) - 0.5 * pow(sigma / out_dist, 8));
-    return out_forceMagnitude * (p1 - p2);
+    return out_forceMagnitude * r;
   }
 #undef pow
   
