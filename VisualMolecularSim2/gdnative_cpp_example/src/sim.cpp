@@ -116,7 +116,7 @@ namespace sim {
   // epsilon: governs the strength of the interaction
   // p1: position of molecule 1 (vector (bold) "r_i")
   // p2: position of molecule 2 (vector "r_j")
-  Vector3 forceOnMolecule(real_t sigma, real_t epsilon, Vector3 p1, Vector3 p2, real_t& out_forceMagnitude, float& out_distSquared, real_t& out_dist) {
+  Vector3 forceOnMolecule(real_t sigma, real_t epsilon, Vector3 p1, Vector3 p2, real_t& out_forceMagnitude, float& out_distSquared) {
     // r_c: maximum distance
     real_t r_c = pow(2, 1.0/6) * sigma;
 
@@ -129,18 +129,18 @@ namespace sim {
     Vector3 squared = vcl::square(r);
     //out_distSquared = hsum_ps_sse3(*reinterpret_cast<__m128*>(&squared));
     out_distSquared = vcl::horizontal_add(squared);
-    out_dist = sqrt(out_distSquared); // "r" aka "r_ij"
+    //out_dist = sqrt(out_distSquared); // "r" aka "r_ij"
     //
     //[non-option:vcl]//
     // real_t dist = p1.distance_to(p2); // "r" aka "r_ij"
     // //
-    if (out_dist >= r_c) {
+    if (out_distSquared >= r_c * r_c) {
       // Maximum distance reached
       out_forceMagnitude = 0;
       return Vector3(0, 0, 0, 0); //Vector3::ZERO;
     }
     static double cached1 = 48 * epsilon / (sigma * sigma);
-    out_forceMagnitude = cached1 * (pow(sigma / out_dist, 14) - 0.5 * pow(sigma / out_dist, 8));
+    out_forceMagnitude = cached1 * (pow(sigma, 14) / pow(out_distSquared, 7)) - 0.5 * (pow(sigma, 8) / pow(out_distSquared, 4));
     return out_forceMagnitude * r;
   }
 #undef pow
@@ -150,17 +150,17 @@ namespace sim {
   // p1: position of molecule 1 (vector (bold) "r_i"). units: Å
   // p2: position of molecule 2 (vector "r_j"). units: Å
   // Returns units: eV
-  real_t potentialEnergyOnMolecule(real_t sigma, real_t epsilon, real_t dist) {
+  real_t potentialEnergyOnMolecule(real_t sigma, real_t epsilon, real_t distSquared) {
     // r_c: maximum distance
     real_t r_c = pow(2, 1.0/6) * sigma;
 
 //#define pow fs_power
 #define pow ipow
-    if (dist >= r_c) {
+    if (distSquared >= r_c * r_c) {
       // Maximum distance reached
       return 0;
     }
-    return 4 * epsilon * (pow(sigma / dist, 12) - pow(sigma / dist, 6)) + epsilon;
+    return 4 * epsilon * (pow(sigma, 12) / pow(distSquared, 6) - pow(sigma, 6) / pow(distSquared, 3)) + epsilon;
   }
 #undef pow
 
@@ -179,8 +179,8 @@ namespace sim {
           Molecule& m2 = molecules[j];
           ForceInfo& f2 = moleculeForces[j]; //[non-deprecated:badImpl]
 
-          Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos, fcVal, distSquared, dist);
-          out_uSum += potentialEnergyOnMolecule(sigma, epsilon, dist);
+          Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos, fcVal, distSquared);
+          out_uSum += potentialEnergyOnMolecule(sigma, epsilon, distSquared);
           out_virSum += fcVal * distSquared;
           //[deprecated:badImpl] m1.applyForce(force, deltaTime);
           f1.applyForce(force);
@@ -191,7 +191,7 @@ namespace sim {
         for (size_t j = 0; j < nWall; j++) {
           Wall& m2 = walls[j];
 
-          Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos, fcVal, distSquared, dist);
+          Vector3 force = forceOnMolecule(sigma, epsilon, m1.pos, m2.pos, fcVal, distSquared);
           // TODO: change out_uSum here?
           // TODO: change out_virSum here?
           //[deprecated:badImpl] m1.applyForce(force, deltaTime);

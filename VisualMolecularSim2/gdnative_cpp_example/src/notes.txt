@@ -1,3 +1,29 @@
 roughly: derivative of potential energy is force
 
 three body problem: sometimes no general solution exists so diffEq isnt good always. do rungekutta4.
+
+
+
+RUNGA KUTTA 4: https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods :
+it is: y_{n+1} is the next position of the simulation. h is the timestep since they are adding t_n + h to get t_{n+1}
+
+def velocity(t, [x,y]):
+    return [t, -t] # Shows it going down faster and faster to bottom right. (for this example)
+
+pos = [0, 0]
+time = 0
+while true:
+      delta = ? (get delta time)
+      k1=velocity (time, pos)
+      k2 = velocity(time + delta/2, pos+delta * k1/2)
+      k3=velocity(time + delta / 2, pos+delta*k2/2)
+      k4=velocity(time+delta,pos+delta*k3)
+      pos+=1/6*(k1+2*k2+2*k3+k4)*delta
+      time+=delta
+
+
+
+
+
+
+m times integral of f dot dr = E
