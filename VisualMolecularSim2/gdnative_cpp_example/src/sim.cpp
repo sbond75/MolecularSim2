@@ -152,7 +152,7 @@ namespace sim {
   // Returns units: eV
   real_t potentialEnergyOnMolecule(real_t sigma, real_t epsilon, real_t dist) {
     // r_c: maximum distance
-    static real_t r_c = pow(2, 1.0/6) * sigma;
+    real_t r_c = pow(2, 1.0/6) * sigma;
 
 //#define pow fs_power
 #define pow ipow
@@ -160,8 +160,7 @@ namespace sim {
       // Maximum distance reached
       return 0;
     }
-    static double cached1 = 4 * epsilon;
-    return cached1 * (pow(sigma / dist, 12) - pow(sigma / dist, 6)) + epsilon;
+    return 4 * epsilon * (pow(sigma / dist, 12) - pow(sigma / dist, 6)) + epsilon;
   }
 #undef pow
 
