@@ -152,7 +152,7 @@ namespace sim {
   // Returns units: eV
   real_t potentialEnergyOnMolecule(real_t sigma, real_t epsilon, real_t dist) {
     // r_c: maximum distance
-    real_t r_c = pow(2, 1.0/6) * sigma;
+    static real_t r_c = pow(2, 1.0/6) * sigma;
 
 //#define pow fs_power
 #define pow ipow
@@ -160,7 +160,8 @@ namespace sim {
       // Maximum distance reached
       return 0;
     }
-    return 4 * epsilon * (pow(sigma / dist, 12) - pow(sigma / dist, 6)) + epsilon;
+    static double cached1 = 4 * epsilon;
+    return cached1 * (pow(sigma / dist, 12) - pow(sigma / dist, 6)) + epsilon;
   }
 #undef pow
 
@@ -210,15 +211,15 @@ namespace sim {
       m1.updatePos(deltaTime);
 
       // Bounce on walls
-      if (m1.pos[0] < boundingBoxWalls[0][0] || m1.pos[0] > boundingBoxWalls[1][0]) {
-        m1.velocity.insert(0, -m1.velocity[0]);
-      }
-      if (m1.pos[1] < boundingBoxWalls[0][1] || m1.pos[1] > boundingBoxWalls[1][1]) {
-        m1.velocity.insert(1, -m1.velocity[1]);
-      }
-      if (m1.pos[2] < boundingBoxWalls[0][2] || m1.pos[2] > boundingBoxWalls[1][2]) {
-        m1.velocity.insert(2, -m1.velocity[2]);
-      }
+      // if (m1.pos[0] < boundingBoxWalls[0][0] || m1.pos[0] > boundingBoxWalls[1][0]) {
+      //   m1.velocity.insert(0, -m1.velocity[0]);
+      // }
+      // if (m1.pos[1] < boundingBoxWalls[0][1] || m1.pos[1] > boundingBoxWalls[1][1]) {
+      //   m1.velocity.insert(1, -m1.velocity[1]);
+      // }
+      // if (m1.pos[2] < boundingBoxWalls[0][2] || m1.pos[2] > boundingBoxWalls[1][2]) {
+      //   m1.velocity.insert(2, -m1.velocity[2]);
+      // }
     }
     // //
   }

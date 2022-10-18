@@ -1,0 +1,3 @@
+roughly: derivative of potential energy is force
+
+three body problem: sometimes no general solution exists so diffEq isnt good always. do rungekutta4.
